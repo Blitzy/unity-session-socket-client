@@ -42,3 +42,6 @@ The basic concept is that a `UnitySessionData` component is simply a MonoBehavio
 3. `UnhookEventListeners()` - Unsubscribe from events the session data is listening to.
 4. `UpdateDataFromLocal()` - Use to update the session data stored in this component from the other components it watches.
 5. `UpdateLocalFromData()` - Use to update the watched components with the data stored in this component.
+
+## Third Party Credits
+ - [MiniJSON](https://gist.github.com/darktable/1411710) - Calvin Rien ([darktable](https://gist.github.com/darktable/1411710))
