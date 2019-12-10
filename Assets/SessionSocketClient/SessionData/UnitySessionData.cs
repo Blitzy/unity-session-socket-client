@@ -9,15 +9,23 @@ namespace SessionSocketClient {
         public static bool DebugEnabled = false;
 
         [SerializeField]
+        [Tooltip("This is the id of the session data. DO NOT CHANGE THIS FROM THE EDITOR INSPECTOR AT RUNTIME... Use the Id property instead.")]
         private string _id;
 
         private UnitySessionDataPermissions _permissions;
-        private int _eventListenersMode = -1;
+        private int _eventListenersState = -1;
+        private bool _hasStarted;
 
-        public string Id { get { return _id; } }
+        public string Id { 
+            get {
+                return _id;
+            }
+            set {
+                _ChangeId(value);
+            }
+        }
 
-        protected void Start()
-        {
+        protected void Start() {
             if (string.IsNullOrEmpty(Id))
             {
                 Debug.LogException(new UnassignedReferenceException("SessionData must have an id assigned to it."), this);
@@ -27,7 +35,12 @@ namespace SessionSocketClient {
             _permissions = GetComponent<UnitySessionDataPermissions>();
 
             Init();
+            _IdInit();
 
+            _hasStarted = true;
+        }
+
+        private void _IdInit() {
             // Load this session data with data json that is stored in SessionDataManager.
             string json = SessionDataManager.Instance.GetData(Id);
 
@@ -51,8 +64,25 @@ namespace SessionSocketClient {
             SessionDataManager.Instance.SubscribeToUpdates(this);
         }
 
-        protected void OnDestroy()
-        {
+        private bool _ChangeId(string newId, bool force = false) {
+            if (_id.Equals(newId) && !force) {
+                // Id is the same, do nothing.
+                return false;
+            }
+
+            if (_hasStarted) {
+                // Need to unsubscribe from updates using old id.
+                SessionDataManager.Instance.UnsubscribeFromUpdates(this);
+                _InternalEnableEventListeners(false);
+            }
+
+            _id = newId;
+            _IdInit();
+
+            return true;
+        }
+
+        protected void OnDestroy() {
             // This component is being destroyed, no longer need to listen for changes to our data.
             SessionDataManager.Instance.UnsubscribeFromUpdates(this);
             _InternalEnableEventListeners(false);
@@ -61,8 +91,7 @@ namespace SessionSocketClient {
         /// <summary>
         /// Update the state of data in this class with the provided json.
         /// </summary>
-        public void UpdateData(string json)
-        {
+        public void UpdateData(string json) {
             if (_permissions != null && !_permissions.canReceiveUpdates) {
                 // If permissions say that receiving updates is not allowed, then ignore this method call.
                 return;
@@ -84,8 +113,7 @@ namespace SessionSocketClient {
         /// <summary>
         /// Save the current state of data in this class to the SessionDataManager.
         /// </summary>
-        protected void SaveData()
-        {
+        protected void SaveData() {
             if (_permissions != null && !_permissions.canSendUpdates) {
                 // If permissions say that sending updates is not allowed, then ignore this method call.
                 return;
@@ -103,14 +131,14 @@ namespace SessionSocketClient {
                     return;
                 }
                 
-                if (_eventListenersMode == -1 || _eventListenersMode == 0) {
+                if (_eventListenersState == -1 || _eventListenersState == 0) {
                     HookupEventListeners();
-                    _eventListenersMode = 1;
+                    _eventListenersState = 1;
                 }
             } else {
-                if (_eventListenersMode == 1) {
+                if (_eventListenersState == 1) {
                     UnhookEventListeners();
-                    _eventListenersMode = 0;
+                    _eventListenersState = 0;
                 }
             }
         }
