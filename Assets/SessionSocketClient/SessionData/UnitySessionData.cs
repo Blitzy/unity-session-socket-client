@@ -77,7 +77,11 @@ namespace SessionSocketClient {
             }
 
             _id = newId;
-            _IdInit();
+
+            if (_hasStarted) {
+                // Only reinit id if this session data had already started.
+                _IdInit();
+            }
 
             return true;
         }
